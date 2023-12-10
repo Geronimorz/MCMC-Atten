@@ -2,7 +2,7 @@ function Plot_model(
     dataStruct::Dict{String,AbstractArray{Float64,N} where N}, 
     RayTraces::Dict{String,Array{Float64,2}}, 
     model_mean::Array{Float64,2},  #used to be Array{Float64} since model_mean is a 1 dimensional vector, but it is now a 2D matrix
-    TD_parameters::Dict{String,Any},
+    par::Dict{String,Any},
     cmax::Float64,
     l0::Int64,
     ModelType::String,
@@ -25,7 +25,7 @@ function Plot_model(
 
     dirname = "./figures/"*CrossSection*ModelType
 
-    if TD_parameters["add_yVec"] == 0 # Tonga 2D
+    if par["add_yVec"] == 0 # Tonga 2D
         println("****2D Plotting****")
         tmpx = vcat(vec(dataStruct["dataX"])', vec(dataStruct["elonsX"])')
         tmpy = vcat(zeros(size(dataStruct["dataX"]))', vec(dataStruct["edep"])') 
@@ -81,7 +81,7 @@ function Plot_model(
 
             title!(ModelType*" model on cross-section")
             # ylims!(p, (0, 300))
-            # savefig(p, "model_mean_xzMap_0-300km" * string(TD_parameters["y0"][1]) * "km") 
+            # savefig(p, "model_mean_xzMap_0-300km" * string(par["y0"][1]) * "km") 
 
             ylims!(p, (0, 660))
             scatter!(p, dataStruct["elonsX"], vec(dataStruct["edep"]), marker=:o, color=:lightblue, label="events", markersize=4,legend=false)
@@ -94,9 +94,9 @@ function Plot_model(
             title!("Model_"*ModelType*"_xzMap_ray" * string(l0) * "km")       
             savefig(p, dirname*"/Model_"*ModelType*"_xzMap_ray" * string(l0) * "km")   
   
-            # title!("model_mean_xzMap_0-300km_ray" * string(TD_parameters["y0"][1]) * "km")
+            # title!("model_mean_xzMap_0-300km_ray" * string(par["y0"][1]) * "km")
             # ylims!(p, (0, 300))
-            # savefig(p, "model_mean_xzMap_0-300km_ray" * string(TD_parameters["y0"][1]) * "km") 
+            # savefig(p, "model_mean_xzMap_0-300km_ray" * string(par["y0"][1]) * "km") 
         end
 
         if CrossSection == "xy"
@@ -146,7 +146,7 @@ function Plot_model_with_uncertainty(
     RayTraces::Dict{String,Array{Float64,2}}, 
     model_mean::Array{Float64,2},  #used to be Array{Float64} since model_mean is a 1 dimensional vector, but it is now a 2D matrix
     model_poststd::Array{Float64,2},
-    TD_parameters::Dict{String,Any},
+    par::Dict{String,Any},
     cmax::Float64,
     l0::Int64,
     CrossSection::String
@@ -161,7 +161,7 @@ function Plot_model_with_uncertainty(
     threshold = 5.0
     dirname = "./figures/"*CrossSection*ModelType
 
-    if TD_parameters["add_yVec"] == 0 # Tonga 2D
+    if par["add_yVec"] == 0 # Tonga 2D
         println("****2D Plotting****")
         tmpx = vcat(vec(dataStruct["dataX"])', vec(dataStruct["elonsX"])')
         tmpy = vcat(zeros(size(dataStruct["dataX"]))', vec(dataStruct["edep"])') 
@@ -226,7 +226,7 @@ function Plot_model_with_uncertainty(
 
             title!(ModelType*" model on cross-section")
             # ylims!(p, (0, 300))
-            # savefig(p, "model_mean_xzMap_0-300km" * string(TD_parameters["y0"][1]) * "km") 
+            # savefig(p, "model_mean_xzMap_0-300km" * string(par["y0"][1]) * "km") 
 
             ylims!(p, (0, 660))
             scatter!(p, dataStruct["elonsX"], vec(dataStruct["edep"]), marker=:o, color=:lightblue, label="events", markersize=4,legend=false)
@@ -239,9 +239,9 @@ function Plot_model_with_uncertainty(
             title!("Model_"*ModelType*"_xzMap_ray" * string(l0) * "km")       
             savefig(p, dirname*"/Model_"*ModelType*"_xzMap_ray" * string(l0) * "km")   
   
-            # title!("model_mean_xzMap_0-300km_ray" * string(TD_parameters["y0"][1]) * "km")
+            # title!("model_mean_xzMap_0-300km_ray" * string(par["y0"][1]) * "km")
             # ylims!(p, (0, 300))
-            # savefig(p, "model_mean_xzMap_0-300km_ray" * string(TD_parameters["y0"][1]) * "km") 
+            # savefig(p, "model_mean_xzMap_0-300km_ray" * string(par["y0"][1]) * "km") 
         end
 
         if CrossSection == "xy"
@@ -300,12 +300,12 @@ function plot_model_hist(
     model_hist, 
     dataStruct::Dict{String,AbstractArray{Float64,N} where N}, 
     RayTraces::Dict{String,Array{Float64,2}},
-    TD_parameters::Dict{String,Any}, 
+    par::Dict{String,Any}, 
     cmax::Float64
     )
 
-    if TD_parameters["xzMap"] == true
-        for l0 in TD_parameters["y0"]
+    if par["xzMap"] == true
+        for l0 in par["y0"]
             m_xz = []
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["zVec"])))
 
@@ -333,18 +333,18 @@ function plot_model_hist(
             end
             mask_model_xz = mask_xz .* model_mean_xz
 
-            # @time Plot_model(dataStruct, RayTraces, model_mean_xz, TD_parameters, cmax, l0, "Mean", "xz")
-            # @time Plot_model(dataStruct, RayTraces, poststd_xz, TD_parameters, maximum(poststd_xz), l0, "Uncertainty", "xz")
-            # @time Plot_model(dataStruct, RayTraces, mask_model_xz, TD_parameters, cmax, l0, "Masked", "xz")
+            # @time Plot_model(dataStruct, RayTraces, model_mean_xz, par, cmax, l0, "Mean", "xz")
+            # @time Plot_model(dataStruct, RayTraces, poststd_xz, par, maximum(poststd_xz), l0, "Uncertainty", "xz")
+            # @time Plot_model(dataStruct, RayTraces, mask_model_xz, par, cmax, l0, "Masked", "xz")
             @time Plot_model_with_uncertainty(
                 dataStruct, RayTraces, model_mean_xz, poststd_xz, 
-                TD_parameters, cmax, l0,  "xz" 
+                par, cmax, l0,  "xz" 
                 )
         end
     end
 
-    if TD_parameters["xyMap"] == true
-        for l0 in TD_parameters["z0"]
+    if par["xyMap"] == true
+        for l0 in par["z0"]
             m_xy = []
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["yVec"])))
             mcount = 0
@@ -371,12 +371,12 @@ function plot_model_hist(
             end
             mask_model_xy = mask_xy .* model_mean_xy
 
-            # @time Plot_model(dataStruct, RayTraces, model_mean_xy, TD_parameters, cmax, l0, "Mean", "xy")
-            # @time Plot_model(dataStruct, RayTraces, poststd_xy, TD_parameters, maximum(poststd_xy), l0, "Uncertainty", "xy")
-            # @time Plot_model(dataStruct, RayTraces, mask_model_xy, TD_parameters, cmax, l0, "Masked", "xy")
+            # @time Plot_model(dataStruct, RayTraces, model_mean_xy, par, cmax, l0, "Mean", "xy")
+            # @time Plot_model(dataStruct, RayTraces, poststd_xy, par, maximum(poststd_xy), l0, "Uncertainty", "xy")
+            # @time Plot_model(dataStruct, RayTraces, mask_model_xy, par, cmax, l0, "Masked", "xy")
             @time Plot_model_with_uncertainty(
                 dataStruct, RayTraces, model_mean_xy, poststd_xy, 
-                TD_parameters, cmax, l0, "xy" 
+                par, cmax, l0, "xy" 
                 )
         end
     end
@@ -388,12 +388,12 @@ function plot_model_hist_weighted(
     model_hist, 
     dataStruct::Dict{String,AbstractArray{Float64,N} where N}, 
     RayTraces::Dict{String,Array{Float64,2}},
-    TD_parameters::Dict{String,Any}, 
+    par::Dict{String,Any}, 
     cmax::Float64
     )
 
-    if TD_parameters["xzMap"] == true
-        for l0 in TD_parameters["y0"]
+    if par["xzMap"] == true
+        for l0 in par["y0"]
             m_xz = []
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["zVec"])))
 
@@ -433,15 +433,15 @@ function plot_model_hist_weighted(
             end
             mask_model_xz = mask_xz .* model_mean_xz
 
-            @time Plot_model(dataStruct, RayTraces, model_mean_xz, TD_parameters, cmax, l0, "Mean", "xz")
-            @time Plot_model(dataStruct, RayTraces, poststd_xz, TD_parameters, maximum(poststd_xz), l0, "Uncertainty", "xz")
-            @time Plot_model(dataStruct, RayTraces, mask_model_xz, TD_parameters, cmax, l0, "Masked", "xz")
+            @time Plot_model(dataStruct, RayTraces, model_mean_xz, par, cmax, l0, "Mean", "xz")
+            @time Plot_model(dataStruct, RayTraces, poststd_xz, par, maximum(poststd_xz), l0, "Uncertainty", "xz")
+            @time Plot_model(dataStruct, RayTraces, mask_model_xz, par, cmax, l0, "Masked", "xz")
         end
     end
 
-    if TD_parameters["xyMap"] == true
+    if par["xyMap"] == true
         
-        for l0 in TD_parameters["z0"]
+        for l0 in par["z0"]
             m_xy = []
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["yVec"])))
             mcount = 0
@@ -476,9 +476,9 @@ function plot_model_hist_weighted(
             end
             mask_model_xy = mask_xy .* model_mean_xy
 
-            @time Plot_model(dataStruct, RayTraces, model_mean_xy, TD_parameters, cmax, l0, "Mean", "xy")
-            @time Plot_model(dataStruct, RayTraces, poststd_xy, TD_parameters, maximum(poststd_xy), l0, "Uncertainty", "xy")
-            @time Plot_model(dataStruct, RayTraces, mask_model_xy, TD_parameters, cmax, l0, "Masked", "xy")
+            @time Plot_model(dataStruct, RayTraces, model_mean_xy, par, cmax, l0, "Mean", "xy")
+            @time Plot_model(dataStruct, RayTraces, poststd_xy, par, maximum(poststd_xy), l0, "Uncertainty", "xy")
+            @time Plot_model(dataStruct, RayTraces, mask_model_xy, par, cmax, l0, "Masked", "xy")
         end
     end
 
@@ -487,7 +487,7 @@ end
 function plot_voronoi(
     model::Model, 
     dataStruct::Dict{String,AbstractArray{Float64,N} where N}, 
-    TD_parameters::Dict{String,Any}, 
+    par::Dict{String,Any}, 
     chain::Int64, 
     iter::Float64
     )
@@ -495,10 +495,10 @@ function plot_voronoi(
 
     cmap    = :jet
     cbtitle = "1000/Qp"
-    cmax    = TD_parameters["cmax"]
+    cmax    = par["cmax"]
 
-    if TD_parameters["xzMap"] == true
-        for l0 in TD_parameters["y0"]
+    if par["xzMap"] == true
+        for l0 in par["y0"]
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["zVec"])))
             m  = [ cart_v_nearest(xs, l0, zs,
                 model.xCell, model.yCell, model.zCell, model.zeta)
@@ -525,8 +525,8 @@ function plot_voronoi(
         end
     end
 
-    if TD_parameters["xyMap"] == true
-        for l0 in TD_parameters["z0"]
+    if par["xyMap"] == true
+        for l0 in par["z0"]
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["yVec"])))
             m  = [ cart_v_nearest(xs, ys, l0,
                 model.xCell, model.yCell, model.zCell, model.zeta)
@@ -553,12 +553,12 @@ function plot_voronoi(
 
 end
 
-function plot_convergence(TD_parameters::Dict{String,Any})
+function plot_convergence(par::Dict{String,Any})
 # plot the convergence of nCells and phi value over iterations for each chain
 # saved in ./figures/nCells and ./figures/phi
     ENV["GKSwstype"] = "nul"
 
-    for chain in 1:TD_parameters["n_chains"]
+    for chain in 1:par["n_chains"]
         model_checkpoint_lists = glob("./models/chain" * string(chain) * "_*")
         if length(model_checkpoint_lists) == 0
             println("ERROR: Couldn't Find Models For Chain" * string(chain))

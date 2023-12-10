@@ -16,6 +16,8 @@ systematic_tsterr: 0.03       # ::Float64.  The systematic error from t* inversi
 ray_interpolate: True         # ::Bool.     Whether or not to interpolate the raytracing results
 seg_len: 10.5                 # ::Float64.  The maximum length of a ray segment
 interp_depth: 300.0           # ::Float64.  The maximum depth to interpolate the raypaths
+add_litho: true               # ::Bool.     Add a top lithospheric layer with low attenuation, Q from PREM.
+litho_thickness: 20.0         # ::Float64.  Lithospheric thickness in km. Estimated from Figure 10 (Rychert et al., 2020) with its age
 #====Inversion setting parameters====#
 
 

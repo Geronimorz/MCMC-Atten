@@ -214,3 +214,4 @@ function delete_old_checkpoint(chain_id, iteration, percentage, percent_interval
         rm(old_checkpoint)
     end
 end
+

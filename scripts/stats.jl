@@ -102,6 +102,30 @@ function cart_dist(
     return sqrt.((x1 - x2).^2 + (y1 - y2).^2 + (z1 - z2).^2)
 end
 
+function tstar_corr(
+    tStars0::AbstractVector{Float64}, 
+    litho_rayl::AbstractVector{Float64},
+    litho_rayu::AbstractVector{Float64}, 
+    Qp::Float64
+    )
+    """
+    Return the t* from the source to the lithospheric depth.
+
+    Parameters
+    ----------
+    - `tStars0`:        The t* from the source to the surface.
+    - `litho_rayl`:     The ray length from the surface to the lithospheric depth.
+    - `litho_rayu`:     The ray length from the lithospheric depth to the surface.
+    - `Qp`:             The Qp of the lithosphere.
+
+    Returns
+    -------
+    - `tStars`:         The t* from the source to the lithospheric depth.
+    """
+    tStars = tStars0 .- (litho_rayl .* litho_rayu ./Qp) 
+    return tStars
+end
+
 function deg2rad(deg)
     return deg * π / 180
 end

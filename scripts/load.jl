@@ -7,11 +7,11 @@ function load_UUP07(par::Dict{String,Any})
 
     Parameters
     ----------
-    par : Dict{String,Any}
+    - `par` : Dict{String,Any}
 
     Returns
     -------
-    itp : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
+    - `itp` : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
         Function to interpolate slowness (s/m) based on a given (lon, lat, z).
     """
     vel = readlines(par["DataDir"] * par["vel_UUP07"])
@@ -79,11 +79,11 @@ function load_lauvel(par::Dict{String,Any})
         
     Parameters
     ----------
-    par : Dict{String,Any}
+    - `par` : Dict{String,Any}
 
     Returns
     -------
-    itp : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
+    - `itp` : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
         Function to interpolate slowness (s/m) based on a given (lon, lat, z).
     """
     vel = readlines(par["DataDir"] * par["vel_lau"])
@@ -151,6 +151,7 @@ function load_par_from_yml(file_name::String)
     """
     par = YAML.load_file(file_name;dicttype=Dict{String,Any})
     par["base_dir"] = "./" * file_name[1:end-4] * "/"
+    par["min_depth"] = par["add_litho"] ? par["litho_thickness"] : par["min_depth"]
     return par
 end
 

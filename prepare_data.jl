@@ -101,7 +101,15 @@ end
 function load_sph_raypath()
     """
     Load 3D raytracing results in spherical coordinate system.
-    The current raypaths are from Fan Wang, utilizing 3D fast marching method.
+    The current raypaths are from Fan Wang, utilizing pseudo bending method from tomoDD.
+    If add_litho is true, raypaths are cut at the lithospheric depth.
+
+    Returns
+    -------
+    - `litho_rayl`:     AbstractVector{Float64}
+        The length of the raypath from the piercing point at lithosperic depth to the source.
+    - `litho_rayu`:     AbstractVector{Float64}
+        The average slowness of the raypath from the piercing point at lithosperic depth to the source.
     """
     loadraypath = readlines(par["base_dir"] * "data/raypaths.dat")
 
@@ -151,6 +159,38 @@ function load_sph_raypath()
     if !isempty(ix)
         push!(X,ix); push!(Y,iy); push!(Z,iz); push!(U,iu)
     end
+
+    # Find the piercing point of all the raypath at the litho_depth
+    # Interpolate the raypath with the piercing point
+    litho_rayl, litho_rayu = fill(0.0,length(U)), fill(0.0,length(U))
+    if par["add_litho"] == true
+        litho_depth = par["litho_thickness"]
+        for k in 1:length(U)
+            for j in 1:length(U[k])-1
+                if Z[k][j] > litho_depth > Z[k][j+1]
+                    X0 = X[k][j] + (X[k][j+1] - X[k][j]) * (litho_depth - Z[k][j]) / (Z[k][j+1] - Z[k][j])
+                    Y0 = Y[k][j] + (Y[k][j+1] - Y[k][j]) * (litho_depth - Z[k][j]) / (Z[k][j+1] - Z[k][j])
+                    Z0 = litho_depth
+                    U0 = itp(X[k][j+1], Y[k][j+1], Z[k][j+1])
+
+                    litho_rayl[k] = sph_dist(X0, Y0, Z0, X[k][end], Y[k][end], Z[k][end])
+                    litho_rayu[k] = 0.5 * (U0 + U[k][end])
+
+                    # delete all the data after index j+1
+                    X[k][j+1] = X0
+                    Y[k][j+1] = Y0
+                    Z[k][j+1] = Z0
+                    U[k][j+1] = U0
+
+                    X[k] = X[k][1:j+1]
+                    Y[k] = Y[k][1:j+1]
+                    Z[k] = Z[k][1:j+1]
+                    U[k] = U[k][1:j+1]
+                    break
+                end
+            end    
+        end       
+    end
         
     #interpolate the ray if individual segment is shorter than seg_len [km]
     # 09/29/23 yurong: potential modifications
@@ -178,6 +218,8 @@ function load_sph_raypath()
         end
     end
 
+
+
     #rearrange the raypaths and according slowness to be a matrix
     #fill the empty cell with NaN
     x = fill(NaN,(maximum(length.(U)),length(U)))
@@ -199,11 +241,20 @@ function load_sph_raypath()
     x, y, z, u = nothing, nothing, nothing, nothing
     lon, lat = nothing,nothing
 
+    return litho_rayl, litho_rayu
 end
 
 function load_cart_raypath()
     """
     Load 3D raytracing results in cartesian coordinate system.
+    If add_litho is true, raypaths are cut at the lithospheric depth.
+
+    Returns
+    -------
+    - `litho_rayl`:     AbstractVector{Float64}
+        The length of the raypath from the piercing point at lithosperic depth to the source.
+    - `litho_rayu`:     AbstractVector{Float64}
+        The average slowness of the raypath from the piercing point at lithosperic depth to the source.
     """
     loadraypath = readlines(par["DataDir"] * par["rayp_file"])
 
@@ -233,6 +284,38 @@ function load_cart_raypath()
             iu = itp.(ix,iy,iz)
             push!(X,ix); push!(Y,iy); push!(Z,iz); push!(U,iu)
         end
+    end
+
+    # Find the piercing point of all the raypath at the litho_depth
+    # Interpolate the raypath with the piercing point
+    litho_rayl, litho_rayu = fill(0.0,length(U)), fill(0.0,length(U))
+    if par["add_litho"] == true
+        litho_depth = par["litho_thickness"]
+        for k in 1:length(U)
+            for j in 1:length(U[k])-1
+                if Z[k][j] > litho_depth > Z[k][j+1]
+                    X0 = X[k][j] + (X[k][j+1] - X[k][j]) * (litho_depth - Z[k][j]) / (Z[k][j+1] - Z[k][j])
+                    Y0 = Y[k][j] + (Y[k][j+1] - Y[k][j]) * (litho_depth - Z[k][j]) / (Z[k][j+1] - Z[k][j])
+                    Z0 = litho_depth
+                    U0 = itp(X[k][j+1], Y[k][j+1], Z[k][j+1])
+
+                    litho_rayl[k] = cart_dist(X0, Y0, Z0, X[k][end], Y[k][end], Z[k][end])
+                    litho_rayu[k] = 0.5 * (U0 + U[k][end])
+
+                    # delete all the data after index j+1
+                    X[k][j+1] = X0
+                    Y[k][j+1] = Y0
+                    Z[k][j+1] = Z0
+                    U[k][j+1] = U0
+
+                    X[k] = X[k][1:j+1]
+                    Y[k] = Y[k][1:j+1]
+                    Z[k] = Z[k][1:j+1]
+                    U[k] = U[k][1:j+1]
+                    break
+                end
+            end    
+        end       
     end
 
     #interpolate the ray if individual segment is shorter than seg_len [km]
@@ -282,11 +365,26 @@ function load_cart_raypath()
     X, Y, Z, U, loadraypath = nothing, nothing, nothing, nothing, nothing
     x, y, z, u = nothing, nothing, nothing, nothing
     lon, lat = nothing,nothing
+
+    return litho_rayl, litho_rayu
 end
 
-function load_sph_traceinfo()
+function load_sph_traceinfo(
+    litho_rayl::AbstractVector{Float64},
+    litho_rayu::AbstractVector{Float64}
+    )
     """
     Load 3D raytracing results in spherical coordinate system.
+    If add_litho is true, tstar is subtracted by the average attenuation along the lithospheric raypath.
+    Note: the average attenuation (aveatten) and travel time remain unchanged (not involved in the inversion).
+
+    Parameters
+    ----------
+    - `litho_rayl`:     AbstractVector{Float64}
+        The length of the raypath from the piercing point at lithosperic depth to the source.
+    - `litho_rayu`:     AbstractVector{Float64}
+        The average slowness of the raypath from the piercing point at lithosperic depth to the source.
+    
     """
     loadatten = readlines(par["base_dir"] * "data/p_tstar.dat")
     loadsta = readlines(par["DataDir"] * par["sta_info"])
@@ -319,7 +417,9 @@ function load_sph_traceinfo()
         push!(errors, parse(Float64, tokens[7]) + systematic_error)
         push!(aveattens, parse(Float64, tokens[9]))
     end
-    
+
+    tStars = par["add_litho"] ? tstar_corr(tStars, litho_rayl, litho_rayu, Find_Qp(par["litho_thickness"]/2)) : tStars
+
     save(par["base_dir"] * "data/traces.jld","station",reshape(stations,(length(stations),1)),
     "EventLatitude",reshape(EventLatitudes,(length(EventLatitudes),1)),
     "EventLongitude",reshape(EventLongitudes,(length(EventLongitudes),1)),
@@ -333,9 +433,22 @@ function load_sph_traceinfo()
     
 end
 
-function load_cart_traceinfo()
+function load_cart_traceinfo(    
+    litho_rayl::AbstractVector{Float64},
+    litho_rayu::AbstractVector{Float64}
+    )
     """
     Load 3D raytracing results in cartesian coordinate system.
+    If add_litho is true, tstar is subtracted by the average attenuation along the lithospheric raypath.
+    Note: the average attenuation (aveatten) and travel time remain unchanged (not involved in the inversion).
+
+    Parameters
+    ----------
+    - `litho_rayl`:     AbstractVector{Float64}
+        The length of the raypath from the piercing point at lithosperic depth to the source.
+    - `litho_rayu`:     AbstractVector{Float64}
+        The average slowness of the raypath from the piercing point at lithosperic depth to the source.
+
     """
     loadatten = readlines(par["DataDir"] * par["tstar_file"])
     loadsta = readlines(par["DataDir"] * par["sta_info"])
@@ -367,7 +480,9 @@ function load_cart_traceinfo()
         push!(errors, parse(Float64, tokens[6]) + systematic_error)
         push!(aveattens, parse(Float64, tokens[8]))
     end
-    
+
+    tStars = par["add_litho"] ? tstar_corr(tStars, litho_rayl, litho_rayu, Find_Qp(par["litho_thickness"]/2)) : tStars
+
     save(par["base_dir"] * "data/traces.jld","station",reshape(stations,(length(stations),1)),
     "EventLatitude",reshape(EventLatitudes,(length(EventLatitudes),1)),
     "EventLongitude",reshape(EventLongitudes,(length(EventLongitudes),1)),
@@ -383,10 +498,10 @@ end
 
 if par["coordinates"] == 1
     @time intersect_trace_raypath()
-    @time load_sph_raypath()
-    @time load_sph_traceinfo()
+    litho_rayl, litho_rayu = @time load_sph_raypath()
+    @time load_sph_traceinfo(litho_rayl, litho_rayu)
 elseif par["coordinates"] == 2
-    @time load_cart_raypath()
-    @time load_cart_traceinfo()
+    litho_rayl, litho_rayu = @time load_cart_raypath()
+    @time load_cart_traceinfo(litho_rayl, litho_rayu)
 end
 
