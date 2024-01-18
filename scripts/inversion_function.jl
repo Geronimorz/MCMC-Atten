@@ -18,16 +18,6 @@ function perform_inversion(
     return pmap(x -> inv_func(par, dataStruct, RayTraces, x), 1:par["n_chains"])
 end
 
-function delete_old_checkpoint(chain_id, iteration, percentage, percent_interval)
-    # Find and remove the old checkpoint file
-    old_checkpoint_pattern = "./models/chain$(chain_id)_iter*_$(percentage - percent_interval)%.jld"
-    
-    old_checkpoints = glob(old_checkpoint_pattern)
-    for old_checkpoint in old_checkpoints
-        rm(old_checkpoint)
-    end
-end
-
 function sph_inversion_function(
     par::Dict{String,Any}, 
     dataStruct1::Dict{String,AbstractArray{Float64,N} where N}, 
