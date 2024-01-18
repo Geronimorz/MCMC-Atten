@@ -7,15 +7,43 @@ include("./scripts/stats.jl")
 include("./scripts/load.jl")
 include("./scripts/utils.jl")
 
+function prepare_data(file_name)
+    """
+    Load raypaths.dat and p_tstar.dat, and store the data with intersected
 
-file_name = "par_sph_test.yml"
-@time par = load_par_from_yml(file_name)
-@time itp = load_UUP07(par)
-# @time itp = load_lauvel(par)
-@time Find_Qp = load_PREM(par)
-make_dir(par, file_name)
+    Parameters
+    ----------
+    - `file_name`:      String
+        The name of the parameter file.
+    """
+    println("Loading parameters from $file_name ...")
+    # file_name = "par_sph_1e4.yml"
+    @time par = load_par_from_yml(file_name)
+    # Velocity models specifically in the Tongan project:
+    # - UUP07 for spherical coordinates
+    # - Lau.vel for cartesian coordinates
+    if par["coordinates"] == 1
+        @time itp = load_UUP07(par)
+    elseif par["coordinates"] == 2
+        @time itp = load_lauvel(par)
+    end
+    @time Find_Qp = load_PREM(par)
+    make_dir(par, file_name)
 
-function intersect_trace_raypath()
+
+    if par["coordinates"] == 1
+        @time intersect_trace_raypath(par)
+        litho_rayl, litho_rayu = @time load_sph_raypath(par, itp)
+        @time load_sph_traceinfo(litho_rayl, litho_rayu, par, Find_Qp)
+    elseif par["coordinates"] == 2
+        litho_rayl, litho_rayu = @time load_cart_raypath(par, itp)
+        @time load_cart_traceinfo(litho_rayl, litho_rayu, par, Find_Qp)
+    end
+end
+
+
+
+function intersect_trace_raypath(par::Dict{String,Any})
     """
     Load raypaths.dat and p_tstar.dat, and store the data with intersected 
     event-station pairs as the new matched raypaths.dat/p_tstar.dat.
@@ -98,11 +126,17 @@ function intersect_trace_raypath()
 
 end
 
-function load_sph_raypath()
+function load_sph_raypath(par::Dict{String,Any},itp)
     """
     Load 3D raytracing results in spherical coordinate system.
     The current raypaths are from Fan Wang, utilizing pseudo bending method from tomoDD.
     If add_litho is true, raypaths are cut at the lithospheric depth.
+
+    Parameters
+    ----------
+    - `par`:            Dict{String,Any}
+        The dictionary of parameters.
+    - `itp`:            AbstractInterpolation
 
     Returns
     -------
@@ -163,6 +197,7 @@ function load_sph_raypath()
     # Find the piercing point of all the raypath at the litho_depth
     # Interpolate the raypath with the piercing point
     litho_rayl, litho_rayu = fill(0.0,length(U)), fill(0.0,length(U))
+
     if par["add_litho"] == true
         litho_depth = par["litho_thickness"]
         for k in 1:length(U)
@@ -244,10 +279,16 @@ function load_sph_raypath()
     return litho_rayl, litho_rayu
 end
 
-function load_cart_raypath()
+function load_cart_raypath(par::Dict{String,Any},itp)
     """
     Load 3D raytracing results in cartesian coordinate system.
     If add_litho is true, raypaths are cut at the lithospheric depth.
+
+    Parameters
+    ----------
+    - `par`:            Dict{String,Any}
+        The dictionary of parameters.
+    - `itp`:            AbstractInterpolation
 
     Returns
     -------
@@ -318,6 +359,7 @@ function load_cart_raypath()
         end       
     end
 
+
     #interpolate the ray if individual segment is shorter than seg_len [km]
     # 09/29/23 yurong: potential modifications
     # if Spherical: calc the seg lengths
@@ -371,7 +413,9 @@ end
 
 function load_sph_traceinfo(
     litho_rayl::AbstractVector{Float64},
-    litho_rayu::AbstractVector{Float64}
+    litho_rayu::AbstractVector{Float64},
+    par::Dict{String,Any},
+    Find_Qp
     )
     """
     Load 3D raytracing results in spherical coordinate system.
@@ -384,6 +428,8 @@ function load_sph_traceinfo(
         The length of the raypath from the piercing point at lithosperic depth to the source.
     - `litho_rayu`:     AbstractVector{Float64}
         The average slowness of the raypath from the piercing point at lithosperic depth to the source.
+    - `par`:            Dict{String,Any}
+        The dictionary of parameters.
     
     """
     loadatten = readlines(par["base_dir"] * "data/p_tstar.dat")
@@ -435,7 +481,9 @@ end
 
 function load_cart_traceinfo(    
     litho_rayl::AbstractVector{Float64},
-    litho_rayu::AbstractVector{Float64}
+    litho_rayu::AbstractVector{Float64},
+    par::Dict{String,Any},
+    Find_Qp
     )
     """
     Load 3D raytracing results in cartesian coordinate system.
@@ -448,6 +496,10 @@ function load_cart_traceinfo(
         The length of the raypath from the piercing point at lithosperic depth to the source.
     - `litho_rayu`:     AbstractVector{Float64}
         The average slowness of the raypath from the piercing point at lithosperic depth to the source.
+    - `par`:            Dict{String,Any}
+        The dictionary of parameters.
+    - `Find_Qp`:        Function
+        The function to calculate Qp from the depth.
 
     """
     loadatten = readlines(par["DataDir"] * par["tstar_file"])
@@ -496,12 +548,4 @@ function load_cart_traceinfo(
     
 end
 
-if par["coordinates"] == 1
-    @time intersect_trace_raypath()
-    litho_rayl, litho_rayu = @time load_sph_raypath()
-    @time load_sph_traceinfo(litho_rayl, litho_rayu)
-elseif par["coordinates"] == 2
-    litho_rayl, litho_rayu = @time load_cart_raypath()
-    @time load_cart_traceinfo(litho_rayl, litho_rayu)
-end
 

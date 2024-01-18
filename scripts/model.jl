@@ -230,6 +230,30 @@ function update_model_birth!(
     modeln.nCells += 1
 end
 
+# function update_model_birth(
+#     modeln::Model, 
+#     xNew::Float64, 
+#     yNew::Float64, 
+#     zNew::Float64, 
+#     zetanew::Float64)
+#     """
+#     Update the `modeln` with the newly generated cell coordinates (xNew, yNew, zNew) and the associated zeta value (zetanew).
+
+#     Parameters
+#     ----------
+#     - `modeln`:             The model to be updated.
+#     - `xNew`,`yNew`,`zNew`: The new coordinates to add to the model.
+#     - `zetanew`:            The new zeta value associated with the new coordinates.
+#     """
+#     append!(modeln.xCell, xNew)
+#     append!(modeln.yCell, yNew)
+#     append!(modeln.zCell, zNew)
+#     append!(modeln.zeta, zetanew)
+#     modeln.nCells += 1
+
+#     return modeln
+# end
+
 function update_model_death!(
     modeln::Model, 
     kill::Int64
@@ -305,12 +329,10 @@ function sph_perform_birth_action(
 
         modeln = deepcopy(model)
         update_model_birth!(modeln, xNew, yNew, zNew, zetanew)
-
         (modeln, dataStructn, valid) = sph_evaluate(modeln, dataStruct, RayTraces, par)
-           
         α, valid = calculate_alpha_for_birth(par, dataStruct, RayTraces, model, modeln, czeta, zetanew, sig_zeta)
-
-        if rand() < α && valid == 1
+        a1 = rand()
+        if a1 < α && valid == 1
             modeln.accept = 1
             return modeln, dataStructn
         end
@@ -330,14 +352,14 @@ function sph_perform_death_action(
 
         modeln =  deepcopy(model)
         update_model_death!(modeln, kill)
-
         (modeln, dataStructn, valid) = sph_evaluate(modeln, dataStruct, RayTraces, par)
 
         zetanew = sph_interpolation(par, modeln, [model.xCell[kill]], [model.yCell[kill]], [model.zCell[kill]])[1]
 
         α, valid = calculate_alpha_for_death(par, dataStruct, RayTraces, model, modeln, zetanew, sig_zeta, kill)
+        a1 = rand()
 
-        if rand() < α && valid == 1
+        if a1 < α && valid == 1
             modeln.accept = 1
             return modeln, dataStructn
         end
@@ -386,14 +408,15 @@ function sph_perform_move_action(
         move = Int(rand(1:model.nCells))
         modeln = deepcopy(model)
         xCell_n, yCell_n, zCell_n = move_new_coordinates(model,move,xr,yr,zr)
-        α = 0
+        # define α in advance
+        α = NaN
         if xCell_n >= min(xVec...) && xCell_n <= max(xVec...) &&
             yCell_n >= min(yVec...) && yCell_n <= max(yVec...) &&
             zCell_n >= min(zVec...) && zCell_n <= max(zVec...)
             update_model_move!(modeln,move,xCell_n, yCell_n, zCell_n)
             (modeln, dataStructn, valid) = sph_evaluate(modeln, dataStruct, RayTraces, par)
 
-            α = calculate_alpha_for_move(model, modeln)
+            α = calculate_alpha_for_move(modeln, model) 
         else
             valid = 0 
         end
@@ -510,7 +533,7 @@ function cart_perform_move_action(
             update_model_move!(modeln,move,xCell_n, yCell_n, zCell_n)
             (modeln, dataStructn, valid) = cart_evaluate(modeln, dataStruct, RayTraces, par)
 
-            α = calculate_alpha_for_move(model, modeln)
+            α = calculate_alpha_for_move(modeln, model)
         else
             valid = 0 
         end

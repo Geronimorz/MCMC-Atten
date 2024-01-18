@@ -204,7 +204,7 @@ function move_new_coordinates(
     return xCell_n, yCell_n, zCell_n
 end
 
-function delete_old_checkpoint(chain_id, iteration, percentage, percent_interval)
+function delete_old_checkpoint(par, chain_id, iteration, percentage, percent_interval)
     """
     Delete the old checkpoint file.
     """

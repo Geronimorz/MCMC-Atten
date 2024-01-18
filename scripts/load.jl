@@ -14,6 +14,7 @@ function load_UUP07(par::Dict{String,Any})
     - `itp` : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
         Function to interpolate slowness (s/m) based on a given (lon, lat, z).
     """
+    println("Loading U-UP07 velocity model from ", par["DataDir"] * par["vel_UUP07"], "...")
     vel = readlines(par["DataDir"] * par["vel_UUP07"])
     bld, nlon, nlat, nz = parse(Float64, split(vel[1])[1]), parse(Int, split(vel[1])[2]),
                             parse(Int, split(vel[1])[3]), parse(Int, split(vel[1])[4])
@@ -86,6 +87,7 @@ function load_lauvel(par::Dict{String,Any})
     - `itp` : interpolate((lon ::Vector{Float64},lat ::Vector{Float64},z ::Vector{Float64}), sn ::Array{Float64, 3})
         Function to interpolate slowness (s/m) based on a given (lon, lat, z).
     """
+    println("Loading lau.vel velocity model from ", par["DataDir"] * par["vel_lau"], "...")
     vel = readlines(par["DataDir"] * par["vel_lau"])
     nnx, nny, nnz = parse(Int,split(vel[1])[1]), parse(Int,split(vel[1])[2]), parse(Int,split(vel[1])[3])
     lat0, lon0, beta = parse(Float64,split(vel[2])[1]), parse(Float64,split(vel[2])[2]), parse(Float64,split(vel[2])[3])

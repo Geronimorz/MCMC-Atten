@@ -1,3 +1,5 @@
+using Plots
+
 function Plot_model(
     dataStruct::Dict{String,AbstractArray{Float64,N} where N}, 
     RayTraces::Dict{String,Array{Float64,2}}, 
@@ -159,8 +161,8 @@ function Plot_model_with_uncertainty(
     cmap = :jet
     cbtitle = "1000/Qp"
     threshold = 5.0
-    dirname = "./figures/"*CrossSection*ModelType
-
+    dirname = par["base_dir"] * "figures/"*CrossSection*ModelType
+ 
     if par["add_yVec"] == 0 # Tonga 2D
         println("****2D Plotting****")
         tmpx = vcat(vec(dataStruct["dataX"])', vec(dataStruct["elonsX"])')
@@ -315,8 +317,8 @@ function plot_model_hist(
 
                 for j = 1:length(model_hist[i])
 
-                    m  = [ cart_v_nearest(xs, l0, zs,
-                        model_hist[i][j].xCell, model_hist[i][j].yCell, model_hist[i][j].zCell, model_hist[i][j].zeta)
+                    m  = [ sph_v_nearest(xs, l0, zs,
+                        model_hist[i][j])
                         for xs in vec(dataStruct["xVec"]), zs in vec(dataStruct["zVec"]) ]
                     append!(m_xz,[m])
 
@@ -353,8 +355,8 @@ function plot_model_hist(
 
                 for j = 1:length(model_hist[i])
 
-                    m  = [ cart_v_nearest(xs, ys, l0,
-                        model_hist[i][j].xCell, model_hist[i][j].yCell, model_hist[i][j].zCell, model_hist[i][j].zeta)
+                    m  = [ sph_v_nearest(xs, ys, l0,
+                        model_hist[i][j])
                         for xs in vec(dataStruct["xVec"]), ys in vec(dataStruct["yVec"]) ]
                     append!(m_xy,[m])
 
@@ -500,16 +502,21 @@ function plot_voronoi(
     if par["xzMap"] == true
         for l0 in par["y0"]
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["zVec"])))
-            m  = [ cart_v_nearest(xs, l0, zs,
-                model.xCell, model.yCell, model.zCell, model.zeta)
-                for xs in vec(dataStruct["xVec"]), zs in vec(dataStruct["zVec"]) ]
+            if par["coordinates"] == 1
+                m = [ sph_v_nearest(xs, l0, zs, model)
+                    for xs in vec(dataStruct["xVec"]), zs in vec(dataStruct["zVec"]) ]
+            elseif par["coordinates"] == 2
+                m = [ cart_v_nearest(xs, l0, zs, model)
+                    for xs in vec(dataStruct["xVec"]), zs in vec(dataStruct["zVec"]) ]
+            end
 
             p = contourf(vec(dataStruct["xVec"]), vec(dataStruct["zVec"]), vec(m), 
                  linewidth=0.001, xlabel="distance(km)", ylabel="depth(km)", yflip=true, 
                  clims=(0,cmax), c=cmap, colorbar_title = cbtitle)
             title!("Cross section Y="*string(l0)*";Chain"*string(chain)*"_"*string(Int(iter))*
             ";llh="*string(round(model.likelihood,digits=2)))
-            savefig(p, "./figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
+            # savefig(p, "./figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
+            savefig(p, par["base_dir"] * "figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
 
             # add rays, EQs, and stations
             tmpx = vcat(vec(dataStruct["dataX"])', vec(dataStruct["elonsX"])')
@@ -520,25 +527,29 @@ function plot_voronoi(
             scatter!(p, dataStruct["dataX"], zeros(size(dataStruct["dataX"])), marker=:utri, color=:pink, label="station", markersize=6)
             title!("Cross section Y="*string(l0)*";Chain"*string(chain)*"_"*string(Int(iter))*
             ";llh="*string(round(model.likelihood,digits=2)))
-            savefig(p, "./figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
-
+            # savefig(p, "./figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
+            savefig(p, par["base_dir"] * "figures/xzVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
         end
     end
 
     if par["xyMap"] == true
         for l0 in par["z0"]
             m = zeros(length(vec(dataStruct["xVec"])), length(vec(dataStruct["yVec"])))
-            m  = [ cart_v_nearest(xs, ys, l0,
-                model.xCell, model.yCell, model.zCell, model.zeta)
-                for xs in vec(dataStruct["xVec"]), ys in vec(dataStruct["yVec"]) ]
+            if par["coordinates"] == 1
+                m = [ sph_v_nearest(xs, ys, l0, model)
+                    for xs in vec(dataStruct["xVec"]), ys in vec(dataStruct["yVec"]) ]
+            elseif par["coordinates"] == 2
+                m = [ cart_v_nearest(xs, ys, l0, model)
+                    for xs in vec(dataStruct["xVec"]), ys in vec(dataStruct["yVec"]) ]
+            end
 
             p = contourf(vec(dataStruct["xVec"]), vec(dataStruct["yVec"]), vec(m),
                  xlabel="X(km)", ylabel="Y(km)",linewidth=0.001, clims=(0,cmax), 
                  c=cmap, colorbar_title = cbtitle)
             title!("Map View Z="*string(l0)*";Chain"*string(chain)*"_"*string(Int(iter))*
             ";llh="*string(round(model.likelihood,digits=2)))
-            savefig(p, "./figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
-
+            # savefig(p, "./figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
+            savefig(p, par["base_dir"] * "figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter)))
             # add rays, EQs, and stations
             tmpx = vcat(vec(dataStruct["dataX"])', vec(dataStruct["elonsX"])')
             tmpy = vcat(vec(dataStruct["dataY"])', vec(dataStruct["elatsY"])')
@@ -547,52 +558,80 @@ function plot_voronoi(
             scatter!(p, dataStruct["elonsX"], dataStruct["elatsY"], shape=:o, color=:lightblue, label="events", markersize=4)
             title!("Cross section Y="*string(l0)*";Chain"*string(chain)*"_"*string(Int(iter))*
             ";llh="*string(round(model.likelihood,digits=2)))
-            savefig(p, "./figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
+            # savefig(p, "./figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
+            savefig(p, par["base_dir"] * "figures/xyVoronoi_"*string(l0)*"/Chain"*string(chain)*"_"*string(Int(iter))*"ray")
         end
     end
 
 end
 
-function plot_convergence(par::Dict{String,Any})
-# plot the convergence of nCells and phi value over iterations for each chain
-# saved in ./figures/nCells and ./figures/phi
-    ENV["GKSwstype"] = "nul"
+function plot_convergence(par::Dict{String,Any},start_ind::Int64)
+    """
+    plot the convergence of nCells and phi value over iterations for each chain
+    saved in ./figures/nCells and ./figures/phi
 
-    for chain in 1:par["n_chains"]
-        model_checkpoint_lists = glob("./models/chain" * string(chain) * "_*")
-        if length(model_checkpoint_lists) == 0
-            println("ERROR: Couldn't Find Models For Chain" * string(chain))
-        else
-            # load the newest model
-            split1      = split.(model_checkpoint_lists,"%")
-            split2      = [split1[i][1] for i in 1:length(split1)]
-            split3      = split.(split2,"_")
-            split4      = [split3[i][end] for i in 1:length(split3)]
-            model_ind   =  findmax(parse.(Float64,split4))[2]
-            load_model  = load(model_checkpoint_lists[model_ind])
-            for irm in 1:length(model_checkpoint_lists)
-                if irm == model_ind
-                    continue
+    Parameters
+    ----------
+    - `par` : Dict{String,Any}
+    - `start_ind` : Int64, the starting iteration index for plotting nCells and phi (data misfit)
+
+    """
+        ENV["GKSwstype"] = "nul"
+
+        phi_all = []
+        nCells_all = []
+        p_phi = plot()
+        p_nCells = plot()
+        for chain in 1:par["n_chains"]
+            model_checkpoint_lists = glob(par["base_dir"] * "models/chain" * string(chain) * "_*")
+            if length(model_checkpoint_lists) == 0
+                println("ERROR: Couldn't Find Models For Chain" * string(chain))
+            else
+                # load the newest model
+                split1      = split.(model_checkpoint_lists,"%")
+                split2      = [split1[i][1] for i in 1:length(split1)]
+                split3      = split.(split2,"_")
+                split4      = [split3[i][end] for i in 1:length(split3)]
+                model_ind   =  findmax(parse.(Float64,split4))[2]
+                load_model  = load(model_checkpoint_lists[model_ind])
+                for irm in 1:length(model_checkpoint_lists)
+                    if irm == model_ind
+                        continue
+                    end
+                    rm(sort(model_checkpoint_lists)[irm])
                 end
-                rm(sort(model_checkpoint_lists)[irm])
-            end
-            # plot nCells and phi over iterations
-            cellnumber_list = load_model["nCells"]
-            phi_list        = load_model["phi"]
+                # plot nCells and phi over iterations
+                cellnumber_list = load_model["nCells"][start_ind:end]
+                phi_list        = load_model["phi"][start_ind:end]
+                # push!(phi_all, phi_list)
+    
+                p1 = plot(1:length(cellnumber_list),cellnumber_list)
+                title!(p1,"nCells from" *string(start_ind)* " in Chain" *string(chain))
+                xlabel!(p1,"Iterations")
+                ylabel!(p1,"Number of Cells")
+                p2 = plot(1:length(phi_list),phi_list)
+                title!(p2,"Phi from" *string(start_ind)* " in Chain" *string(chain))
+                xlabel!(p2,"Iterations")
+                ylabel!(p2,"Phi")
 
-            p1 = plot(1:length(cellnumber_list),cellnumber_list)
-            title!(p1,"nCells Convergence in Chain" *string(chain))
-            xlabel!(p1,"Iterations")
-            ylabel!(p1,"Number of Cells")
-            p2 = plot(1:length(phi_list),phi_list)
-            title!(p2,"Phi Convergence in Chain" *string(chain))
-            xlabel!(p2,"Iterations")
-            ylabel!(p2,"Phi")
-            savefig(p1,"./figures/nCells/nCells_chain" * string(chain))
-            savefig(p2,"./figures/phi/phi_chain" * string(chain))
- 
+                plot!(p_phi,1:length(phi_list),phi_list)
+                plot!(p_nCells,1:length(cellnumber_list),cellnumber_list)
+
+                savefig(p1,par["base_dir"] * "figures/nCells/nCells_from"* string(start_ind) *"_chain" * string(chain))
+                savefig(p2,par["base_dir"] * "figures/phi/phi_from"* string(start_ind) *"_chain" * string(chain))
+     
+            end
         end
-    end
+        title!(p_phi,"Phi from" *string(start_ind)* "in all the chains")
+        xlabel!(p_phi,"Iterations")
+        ylabel!(p_phi,"Phi")
+        savefig(p_phi,par["base_dir"] * "figures/phi/phi_all_from" *string(start_ind)* ".png")
+
+        title!(p_nCells,"nCells from" *string(start_ind)* "in all the chains")
+        xlabel!(p_nCells,"Iterations")
+        ylabel!(p_nCells,"Number of Cells")
+        savefig(p_nCells,par["base_dir"] * "figures/nCells/nCells_all_from" *string(start_ind)* ".png")
+
 end
 
 function plot_llh(models)

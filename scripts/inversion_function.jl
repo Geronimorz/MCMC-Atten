@@ -18,6 +18,16 @@ function perform_inversion(
     return pmap(x -> inv_func(par, dataStruct, RayTraces, x), 1:par["n_chains"])
 end
 
+function delete_old_checkpoint(chain_id, iteration, percentage, percent_interval)
+    # Find and remove the old checkpoint file
+    old_checkpoint_pattern = "./models/chain$(chain_id)_iter*_$(percentage - percent_interval)%.jld"
+    
+    old_checkpoints = glob(old_checkpoint_pattern)
+    for old_checkpoint in old_checkpoints
+        rm(old_checkpoint)
+    end
+end
+
 function sph_inversion_function(
     par::Dict{String,Any}, 
     dataStruct1::Dict{String,AbstractArray{Float64,N} where N}, 
@@ -40,10 +50,10 @@ function sph_inversion_function(
     α = 0
     for iter in iter_ind:par["n_iter"]
         # By using t* error from t* inversion, we no longer use ACTION5 to perturb "allSig"
-        # action = Int(rand(1:4))
+        action = Int(rand(1:4))
         # 11/14/23 yurong: lower the possibility of action 1
-        actions = [1,2,2,3,3,4,4]
-        action = rand(actions)
+        # actions = [1,2,2,3,3,4,4]
+        # action = rand(actions)
 
         model.action = action
         model.accept = 0
@@ -57,7 +67,6 @@ function sph_inversion_function(
             model, dataStruct = sph_perform_move_action(model, dataStruct, RayTraces, par, xr, yr, zr, xVec, yVec, zVec)
         elseif action == 5 # change sigma
             model, dataStruct = perform_sigma_action(dataStruct,RayTraces,sig_sig,par,model)
-
         end
 
         # plot voronoi diagram over iterations
@@ -84,7 +93,7 @@ function sph_inversion_function(
                 modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
                 println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
                 @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
-                delete_old_checkpoint(chain, iter, percentage, par["save_percent"])
+                delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
                 CurrentModel = nothing
             end
             
@@ -94,7 +103,7 @@ function sph_inversion_function(
             modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
             println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
             @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
-            delete_old_checkpoint(chain, iter, percentage, par["save_percent"])
+            delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
             CurrentModel = nothing
         end
 
@@ -131,10 +140,10 @@ function cart_inversion_function(
     α = 0
     for iter in iter_ind:par["n_iter"]
         # By using t* error from t* inversion, we no longer use ACTION5 to perturb "allSig"
-        # action = Int(rand(1:4))
+        action = Int(rand(1:4))
         # 11/14/23 yurong: lower the possibility of action 1
-        actions = [1,2,2,3,3,4,4]
-        action = rand(actions)
+        # actions = [1,2,2,3,3,4,4]
+        # action = rand(actions)
 
         model.action = action
         model.accept = 0
@@ -174,7 +183,7 @@ function cart_inversion_function(
                 modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
                 println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
                 @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
-                delete_old_checkpoint(chain, iter, percentage, par["save_percent"])
+                delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
                 CurrentModel = nothing
             end
             
@@ -184,7 +193,7 @@ function cart_inversion_function(
             modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
             println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
             @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
-            delete_old_checkpoint(chain, iter, percentage, par["save_percent"])
+            delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
             CurrentModel = nothing
         end
 

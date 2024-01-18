@@ -237,7 +237,6 @@ function calculate_alpha_for_death(
         exp(-((model.zeta[kill] - zetanew)^2) / (2 * sig_zeta^2) - (modeln.phi - model.phi) / 2)
         α = min([1 α]...)           
     elseif par["prior"] == 2 # Normal
-        (modeln, dataStructn, valid) = sph_evaluate(modeln, dataStruct, RayTraces, par)
         α = ((model.nCells) / (model.nCells - 1)) * (par["zeta_scale"] / sig_zeta) * 
         exp((model.zeta[kill]^2) / (2 * par["zeta_scale"]^2) - (model.zeta[kill] - zetanew)^2 / (2 * sig_zeta^2) - 
         (modeln.phi - model.phi) / 2)
@@ -322,4 +321,68 @@ function calculate_alpha_for_move(
     α = exp(-(modeln.phi - model.phi) / 2)
     α = min([1 α]...) 
     return α
+end
+
+function haversine_distance(lat1, lon1, lat2, lon2)
+    """
+    Calculate the great-circle distance between two points on the Earth's surface.
+
+    Parameters
+    ----------
+    - `lat1`:   Latitude of the first point.
+    - `lon1`:   Longitude of the first point.
+    - `lat2`:   Latitude of the second point.
+    - `lon2`:   Longitude of the second point.
+
+    Returns
+    -------
+    - `d`:      The great-circle distance between the two points [km].
+
+    """
+    R = 6371  # Earth's mean radius in km
+    
+    lat1_rad, lon1_rad = deg2rad(lat1), deg2rad(lon1)
+    lat2_rad, lon2_rad = deg2rad(lat2), deg2rad(lon2)
+    
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = sin(dlat/2)^2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon/2)^2
+    c = 2 * atan(sqrt(a), sqrt(1-a))
+    return R * c
+end
+
+function point_line_distance(latp, lonp, lat1, lon1, lat2, lon2)
+    """
+    Calculate the distance between a point and a line segment.
+
+    Parameters
+    ----------
+    - `latp`:   Latitude of the point.
+    - `lonp`:   Longitude of the point.
+    - `lat1`:   Latitude of the first point of the line segment.
+    - `lon1`:   Longitude of the first point of the line segment.
+    - `lat2`:   Latitude of the second point of the line segment.
+    - `lon2`:   Longitude of the second point of the line segment.
+
+    Returns
+    -------
+    - `d`:      The distance between the point and the line segment [km].
+
+    """
+    d1 = haversine_distance(latp, lonp, lat1, lon1)
+    d2 = haversine_distance(latp, lonp, lat2, lon2)
+    d3 = haversine_distance(lat1, lon1, lat2, lon2)
+
+    # Check if point is close to one of the end points
+    if d1^2 >= d2^2 + d3^2 || d2^2 >= d1^2 + d3^2
+        return min(d1, d2)
+    end
+
+    # Calculate the area of the triangle using Heron's formula
+    s = (d1 + d2 + d3) / 2
+    area = sqrt(s * (s - d1) * (s - d2) * (s - d3))
+
+    # Calculate the distance between the point and the line segment
+    return 2 * area / d3
 end
