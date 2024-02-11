@@ -18,6 +18,16 @@ function perform_inversion(
     return pmap(x -> inv_func(par, dataStruct, RayTraces, x), 1:par["n_chains"])
 end
 
+function delete_old_checkpoint(chain_id, iteration, percentage, percent_interval)
+    # Find and remove the old checkpoint file
+    old_checkpoint_pattern = "./models/chain$(chain_id)_iter*_$(percentage - percent_interval)%.jld"
+    
+    old_checkpoints = glob(old_checkpoint_pattern)
+    for old_checkpoint in old_checkpoints
+        rm(old_checkpoint)
+    end
+end
+
 function sph_inversion_function(
     par::Dict{String,Any}, 
     dataStruct1::Dict{String,AbstractArray{Float64,N} where N}, 
@@ -82,7 +92,7 @@ function sph_inversion_function(
                 percentage = Int(100 * iter / par["n_iter"])
                 modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
                 println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
-                @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
+                save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
                 delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
                 CurrentModel = nothing
             end
@@ -92,7 +102,7 @@ function sph_inversion_function(
             percentage = Int(100 * iter / par["n_iter"])
             modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
             println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
-            @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
+            save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
             delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
             CurrentModel = nothing
         end
@@ -172,7 +182,7 @@ function cart_inversion_function(
                 percentage = Int(100 * iter / par["n_iter"])
                 modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
                 println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
-                @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
+                save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",iter,"saved_#",savedModelCount,"modelCount",modelCount,"model_hist",model_hist,"burnin",true,"nCells",cellnumber_list,"phi",phi_list)
                 delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
                 CurrentModel = nothing
             end
@@ -182,7 +192,7 @@ function cart_inversion_function(
             percentage = Int(100 * iter / par["n_iter"])
             modelname = par["base_dir"] * "models/chain" * string(chain) * "_iter" * string(Int(iter)) * "_" * string(percentage)* "%.jld"
             println("----Saving Chain" * string(chain) * " "* string(Int(100 * iter / par["n_iter"]))* "% models------")
-            @time save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
+            save(modelname,"model",CurrentModel,"dataStruct",dataStruct,"iter",Int64(iter),"burnin",false,"nCells",cellnumber_list,"phi",phi_list)
             delete_old_checkpoint(par, chain, iter, percentage, par["save_percent"])
             CurrentModel = nothing
         end

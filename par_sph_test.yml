@@ -9,15 +9,16 @@ lat0: -23.1000                # ::Float64.
 beta: 0.463647609             # ::Float64.
 
 debug_prior:  0               # ::Int64.    Decide whether the data will be used or not
-plot_voronoi: false           # ::Bool.     Plot each voronoi diagram in the generated models or not
+plot_voronoi: False           # ::Bool.     Plot each voronoi diagram in the generated models or not
 add_yVec:     1               # ::Int64.    0: only work in 2D: x- and z- axis; 1: 3D tomography
 add_systematic_tsterr: True   # ::Bool.     Whether or not to add the systematic error from t* inversion
 systematic_tsterr: 0.03       # ::Float64.  The systematic error from t* inversion
 ray_interpolate: True         # ::Bool.     Whether or not to interpolate the raytracing results
 seg_len: 10.5                 # ::Float64.  The maximum length of a ray segment
 interp_depth: 300.0           # ::Float64.  The maximum depth to interpolate the raypaths
-add_litho: true               # ::Bool.     Add a top lithospheric layer with low attenuation, Q from PREM.
+add_litho: False               # ::Bool.     Add a top lithospheric layer with low attenuation, Q from PREM.
 litho_thickness: 20.0         # ::Float64.  Lithospheric thickness in km. Estimated from Figure 10 (Rychert et al., 2020) with its age
+merge_method: 1               # ::Int64.    1: arithmetic mean; 2: Bayesian model averaging; 3: Inverse variance weighted mean
 #====Inversion setting parameters====#
 
 
@@ -27,10 +28,10 @@ PREM: "PREM_1s.csv"           # ::String.   The path of the PREM model
 sta_info: "stations.dat"      # ::String.   The path of the station information: Name, lon, lat, elevation
 vel_UUP07: "UUP07_vp_abs_mod" # ::String.   The path of the UUP07 velocity model
 vel_lau: "lau.vel"            # ::String.   The path of the Lau velocity model 
-tstar_file: "p_tstar_input.dat"  # ::String.   The path of the input t* data
+tstar_file: "p_tstar_plot_sph.dat"  # ::String.   The path of the input t* data
   # For my current project, "p_tstar_input.dat" is the t* file containing orid infomation
   # "p_tstar_cart.dat" in DataDir is the t* file without orid information. And it is used for pseudo-bending raytracing
-rayp_file: "raypaths_UUP07.dat"  # ::String.   The path of the input raypath data
+rayp_file: "raypaths_tomoDD_UUP07.dat"  # ::String.   The path of the input raypath data
   # For my current project, "raypaths_UUP07.dat" is the raypath file in spherical coordinate from tomoDD (pseudo-bending)
   # "raypaths.p" is the raypath file in cartesian coordinate from pseudo-bending raytracing, which is paired with "p_tstar_cart.dat"
 #====File Paths====#
@@ -50,12 +51,12 @@ prior: 1                      # ::Int64.    Uniform:1, normal:2, or exponential:
 
 
 #=====Monte Carlo parameters=====#
-n_chains: 2                   # ::Int64.    Per script, not in total. See iter field in run_batch.pbs
+n_chains: 1                   # ::Int64.    Per script, not in total. See iter field in run_batch.pbs
 n_iter: 1e3                   # ::Float64.  How many times you iterate each chain
 burn_in: 5e2                  # ::Float64.  Don't save until you get to this iteration
 keep_each: 1e1                # ::Float64.  How often to save a model post burnin
 print_each: 1e2               # ::Float64.  How often to print to the screen if you are impatient and chekcing it (like I do)        
-save_percent: 5               # ::Int64.    Per iteration. How often to save the current state as a checkpoint. 
+save_percent: 20               # ::Int64.    Per iteration. How often to save the current state as a checkpoint. 
 #=====Monte Carlo parameters=====#
 
 
@@ -79,9 +80,10 @@ z0:                           # ::Array{Int64,1}. The given z value (vertical ax
   - 500
 xzMap: true                   # ::Bool.     Work on x-z cross section with a given y value
 y0:                           # ::Array{Int64,1}     # the given y value (horizontal axis, E-W afer rotation of β)
-  - 550
-  - 700
-  - 850
+  - -20
+std_threshold: 5.0            # ::Float64.  The model mask threshold of the standard deviation
+transparency_threshold: 13.0  # ::Float64.    The model transparency threshold of the standard deviation
+
 #====Plot Cross section parameters====#
 
 

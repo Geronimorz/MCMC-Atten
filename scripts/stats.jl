@@ -386,3 +386,33 @@ function point_line_distance(latp, lonp, lat1, lon1, lat2, lon2)
     # Calculate the distance between the point and the line segment
     return 2 * area / d3
 end
+
+function merge_arithmetic(
+    m::Vector{Any},
+    std_threshold::Float64
+    )
+    """
+    Merge the models using the arithmetic average method.
+
+    Parameters
+    ----------
+    - `m`:                  The models to be merged.
+    - `std_threshold`:      The standard deviation threshold for masking out the models.
+
+    Returns
+    -------
+    - `model_mean`:         The mean of the models.
+    - `poststd`:            The standard deviation of the models.
+    - `mask_model`:         The masked model.
+    """
+    model_mean   = mean(m)
+    poststd      = std(m)
+    mask         = ones(size(poststd))
+    for i = 1:length(poststd)
+        if poststd[i] > std_threshold 
+            mask[i] = NaN
+        end
+    end
+    mask_model = mask .* model_mean
+    return model_mean, poststd, mask_model
+end

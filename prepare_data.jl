@@ -451,11 +451,21 @@ function load_sph_traceinfo(
 
     for line in loadatten
         tokens = split(line)
-        # orid
+        orid = tokens[1]
+        # use more accurate event locaion from TongaEQ_source_spectra_v4.dat
+        lon, lat , dep = mod(parse(Float64, tokens[4]), 360), parse(Float64, tokens[3]), parse(Float64, tokens[5])
+        for iline in readlines(par["DataDir"] * "TongaEQ_source_spectra_v4.dat")
+            itokens = split(iline)
+            if itokens[1] == orid
+                lon, lat , dep = mod(parse(Float64, itokens[2]), 360), parse(Float64, itokens[3]), parse(Float64, itokens[4])
+                break
+            end
+        end
+        ############################################
         push!(stations, tokens[2])
-        push!(EventLatitudes, parse(Float64, tokens[3]))
-        push!(EventLongitudes, mod(parse(Float64, tokens[4]), 360))
-        push!(EventDepths, parse(Float64, tokens[5]))
+        push!(EventLatitudes, lat)
+        push!(EventLongitudes, lon)
+        push!(EventDepths, dep)
         push!(latitudes, stalat[tokens[2]])
         push!(longitudes, mod(stalon[tokens[2]], 360))
         push!(elevations, staele[tokens[2]])

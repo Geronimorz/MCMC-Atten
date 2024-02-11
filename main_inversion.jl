@@ -11,8 +11,8 @@ using Glob,YAML, Plots
 
 function main_inversion(file_name)
     # file_name = "par_sph_1e4.yml"
-    @time par = load_par_from_yml(file_name)
-    @time (dataStruct, RayTraces) = load_data_Tonga(par)
+    par = load_par_from_yml(file_name)
+    (dataStruct, RayTraces) = load_data_Tonga(par)
     make_dir(par, file_name)
     println("--------Data Loaded-------")
 
